@@ -28,7 +28,7 @@ def R_z(angle):
 def coe_to_cartesian(a, e, theta, omega, inc, raan, config):
     '''
     Takes classical orbital elements as inputs.
-    Function uses rotational matrices by multiplying them to the 3D position and velocity vectors of the object (in perifocal frame).
+    Function uses rotational matrices by multiplying them to the perifocal position and velocity vectors of the object.
     Function returns rotated position and velocity vectors of the object in cartesian form.
     
     '''
@@ -39,9 +39,9 @@ def coe_to_cartesian(a, e, theta, omega, inc, raan, config):
     r = p / (1 + e * np.cos(theta)) # initial distance between object and planet
 
     # x-axis aligned with vernal equinox, y-axis perpendicular to x-axis flat against equatorial plane, thus z = 0
-    r_pf = np.array([r * np.cos(theta), r * np.sin(theta), 0]) # calculates radius vector of object in perifocal frame
+    r_pf = np.array([r * np.cos(theta), r * np.sin(theta), 0]) # calculates perifocal position vector of object in perifocal
 
-    v_pf = np.array([ - (h / p) * np.sin(theta),  (h / p) * (e + np.cos(theta)), 0]) #calculates velocity vector of object in perifocal frame
+    v_pf = np.array([ - (h / p) * np.sin(theta),  (h / p) * (e + np.cos(theta)), 0]) #calculates perifocal velocity vector of object
 
     rotate_matrix = R_z(raan) @ R_x(inc) @ R_z(omega) # conglomerates rotational matrices by multiplying them non-commutatively
     # rotate around z-axis by Argument of Perigee (omega)

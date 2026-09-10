@@ -1,9 +1,7 @@
-import os
 import time
 
 import numpy as np
 
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 from conversion.convert_elements import coe_to_cartesian, current_orbital_period
@@ -255,6 +253,5 @@ def execute():
     print(f"Simulation completed in {elapsed_time:.2f} seconds.")      
 
 # run simulation
-os.system('cls' if os.name == 'nt' else 'clear')
 execute()
 

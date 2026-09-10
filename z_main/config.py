@@ -21,8 +21,8 @@ class Config:
 
 
     # ELLIPSE
-    r_peri: float = R + 120000 # / m [distance between periapsis and earth]
-    r_apo: float = R + 400000 # / m [distance between apoapsis and earth]
+    r_peri: float = R + 220000 # / m [distance between periapsis and center of earth]
+    r_apo: float = R + 750000 # / m [distance between apoapsis and center of earth]
 
     a_0: float = (r_apo + r_peri) / 2 # / m [initial semi-major axis, classical orbital element]
     e: float = (r_apo - r_peri) / (r_apo + r_peri) # / ~ [eccentricity of ellipse, classical orbital element]
@@ -35,18 +35,18 @@ class Config:
     T_orbit: float = 2 * np.pi * (((a_0 ** 3) / mu) ** 0.5) # / s [initial period of orbit]
 
     # SATELLITE
-    m: float = 4.000e5 # / kg [mass of satellite]
-    Cd: float = 0.8  # / ~ [drag coefficient]
+    m: float = 1000 # / kg [mass of satellite]
+    Cd: float = 2.2  # / ~ [drag coefficient]
 
-    radius_cylinder: float = 5 # / m [radius of cylindrical satellite]
-    height_cylinder: float = 20 # / m [height of cylindrical satellite]
+    radius_cylinder: float = 1.0 # / m [radius of cylindrical satellite]
+    height_cylinder: float = 3.0 # / m [height of cylindrical satellite]
 
-    length_cuboid: float = 5 # / m [length of cuboid satellite]
-    width_cuboid: float = 5 # / m [width of cuboid satellite]
-    height_cuboid: float = 10 # / m [height of cuboid satellite]
+    length_cuboid: float = 5.0 # / m [length of cuboid satellite]
+    width_cuboid: float = 2.0 # / m [width of cuboid satellite]
+    height_cuboid: float = 0.5 # / m [height of cuboid satellite]
 
     # TUMBLE
-    r_cp: tuple = (0.05, 0.02, 0) # / m [vector from center of mass to center of pressure, approximated]\
+    r_cp: tuple = (0.05, 0.02, 0.01) # / m [vector from center of mass to center of pressure, approximated]\
 
     q_0: tuple = (1, 0, 0, 0) # / ~ [initial quaternion of turn (q0) and axis (q1, q2, q3)]
     om_body_0: tuple = (0.01, 0, 0) # / rad s^-1 [initial angular velocity components]
@@ -73,9 +73,10 @@ class Config:
 
     # INTEGRATION
     dt: float = 10 # / s [constant RK4 time step, if needed]
-    days: float = 40 # / days [number of days]
+    days: float = 100 # / days [number of days]
     T: float = days * 24 * 3600 # / s [total duration for integration]
 
     # SELECTION
     object: str = "cuboid" # (cylinder / cuboid) [chosen shape of satellite]
-    runs: int = 3 # (integer) [number of runs for Monte-Carlo simulation, if chosen]
+    runs: int = 15 # (integer) [number of runs for Monte-Carlo simulation, if chosen]
+
