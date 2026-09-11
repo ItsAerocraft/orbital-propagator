@@ -2,42 +2,64 @@ import numpy as np
 
 from scipy.integrate import solve_ivp
 
+
 def event_reentry(t, state, config):
-    """
-    Function takes state vector and time as inputs.
-    Function computes the altitude of the object as measured from ground level.
-    The returned function needed to check if object has experienced collision, necessary check for solver to terminate.
-    """
-    pos_vctr = np.array(state[0:3]) # extract items x, y, z from state vector
-    mag_r = np.linalg.norm(pos_vctr) # obtain magnitude of position vector
+    '''
+    Computes the object's altitude above ground level, used as the re-entry
+    termination event for the integrator.
 
-    return mag_r - config.R  # above ground level returns positive number, below ground level returns negative number
+    Args:
+        [t]: Elapsed time since epoch (s).
+        [state]: State vector whose first three elements are the ECI position (m).
+        [config]: Simulation config, providing [R] (m).
 
-#wrap functions so that solve_ivp can use in form (t, state), it cannot use (t, state, config)
+    Returns:
+        Altitude above ground level (m); positive above ground, negative below.
+    '''
+    pos_vctr = np.array(state[0:3])
+    mag_r = np.linalg.norm(pos_vctr)
+
+    return mag_r - config.R
+
+
 def propagate_adaptive(function, state_0, config):
-    """
-    Function takes state vector and time as inputs.
-    Function computes a given function (e.g. dynamics) through solve_ivp, gives state vector array for 2000 adaptive time-steps.
-    Adaptive time-steps are used to stay within relative and absolute tolerance bounds.
-    """
+    '''
+    Integrates a given dynamics function (e.g. [dynamics]) over the configured
+    duration using an adaptive-step solve_ivp, terminating early on re-entry.
+
+    Args:
+        [function]: Callable with signature ([t], [state], [config]) returning
+            the state derivative vector.
+        [state_0]: Initial state vector, in the same units expected by [function].
+        [config]: Simulation config, providing [T] (s).
+
+    Returns:
+        The scipy `OdeResult` from solve_ivp, containing up to 2000 adaptive
+        time-steps between 0 and [T].
+
+    Wraps [function] and the re-entry event to the (t, state) signature
+    solve_ivp requires, since it cannot pass through [config]. The re-entry
+    event only triggers on a decreasing crossing of zero (e.g. 0.1 -> 0 -> -0.1),
+    not an increasing one.
+    '''
 
     wrap_dynamics = lambda t, state: function(t, state, config)
 
     wrap_reentry = lambda t, state: event_reentry(t, state, config)
-    wrap_reentry.terminal = True # stop integration when reentry_event returns 0, but usually decreasing through 0 (not integers)
-    wrap_reentry.direction = -1 # event only triggers when reentry_event decreases through 0 (e.g. 0.1 --> 0 --> -0.1)
+    wrap_reentry.terminal = True
+    wrap_reentry.direction = -1
 
-    t_eval = np.linspace(0, config.T, 2000) #for solve_ivp to save 2000 time-steps starting at 0 and ending at T
+    t_eval = np.linspace(0, config.T, 2000)
 
     result = solve_ivp(
         fun = wrap_dynamics,
         t_span = (0, config.T),
         y0 = state_0,
         method = "RK45",
-        events = wrap_reentry, #uses reentry wrapped function, with respective termination trigger
-        t_eval = t_eval, # requested 2000 time-steps
-        rtol = 1e-8,  #relative tolerance, accurate to ~8 s.f. --> allowed error of solver before solver adapts time-step again to stay within bounds
-        atol = 1e-6 #absolute tolerance, minimum precision threshold to prevent solve_ivp from shrinking time-step to infinitessmal size and crashing sim
+        events = wrap_reentry,
+        t_eval = t_eval,
+        rtol = 1e-8,  # relative tolerance (~8 significant figures) before the solver adapts its time-step
+        atol = 1e-6  # absolute tolerance floor, preventing the time-step from shrinking to near-zero and crashing the solver
     )
 
     return result

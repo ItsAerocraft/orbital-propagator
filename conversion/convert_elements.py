@@ -1,73 +1,117 @@
 import numpy as np
 
+
 def R_x(angle):
     '''
-    Generates 3 X 3 coordinate rotation matrices to rotate a 3D vector around the x-axis by a given angle (input).
-    Angles are measured in radians.
+    Generates the 3x3 rotation matrix for a rotation about the x-axis.
+
+    Args:
+        [angle]: Rotation angle (rad).
+
+    Returns:
+        3x3 array representing the rotation matrix (unitless).
     '''
-    
-    matrix_rotate_x = np.array([[1, 0, 0], # 1 in first row, x position to guarentee that x remains the same value (rotate around x)
-                   [0, np.cos(angle), - np.sin(angle)], # standard rotation of axis formulae
+
+    matrix_rotate_x = np.array([[1, 0, 0],
+                   [0, np.cos(angle), - np.sin(angle)],
                    [0, np.sin(angle), np.cos(angle)]
                    ])
 
     return matrix_rotate_x
 
+
 def R_z(angle):
     '''
-    Same function as R_x above, but for z-axis.
+    Generates the 3x3 rotation matrix for a rotation about the z-axis.
+
+    Args:
+        [angle]: Rotation angle (rad).
+
+    Returns:
+        3x3 array representing the rotation matrix (unitless).
     '''
-    
+
     matrix_rotate_z = np.array([[np.cos(angle), - np.sin(angle), 0],
                    [np.sin(angle), np.cos(angle), 0],
-                   [0, 0, 1] # same concept as rotate around x-axis above, by keeping z at the same value
+                   [0, 0, 1]
                    ])
 
     return matrix_rotate_z
 
+
 def coe_to_cartesian(a, e, theta, omega, inc, raan, config):
     '''
-    Takes classical orbital elements as inputs.
-    Function uses rotational matrices by multiplying them to the perifocal position and velocity vectors of the object.
-    Function returns rotated position and velocity vectors of the object in cartesian form.
-    
+    Converts classical orbital elements into a Cartesian ECI position/velocity state.
+
+    Args:
+        [a]: Semi-major axis (m).
+        [e]: Eccentricity (unitless).
+        [theta]: True anomaly (rad).
+        [omega]: Argument of periapsis (rad).
+        [inc]: Inclination angle (rad).
+        [raan]: Right ascension of the ascending node (rad).
+        [config]: Simulation config, providing [mu] (m^3 s^-2).
+
+    Returns:
+        6-element array: ECI position (m) concatenated with ECI velocity (m s^-1).
+
+    Computes the perifocal position/velocity vectors (with the perifocal
+    x-axis aligned with the vernal equinox and z = 0), then rotates them into
+    the ECI frame via R_z([raan]) @ R_x([inc]) @ R_z([omega]).
     '''
 
-    p = a * (1 - (e ** 2)) # semi-latus rectum, drawn from foci to conic section, perpendicular to semi-major axis
-    h = np.sqrt(config.mu * p) # specific angular momentum
+    p = a * (1 - (e ** 2))
+    h = np.sqrt(config.mu * p)
 
-    r = p / (1 + e * np.cos(theta)) # initial distance between object and planet
+    r = p / (1 + e * np.cos(theta))
 
-    # x-axis aligned with vernal equinox, y-axis perpendicular to x-axis flat against equatorial plane, thus z = 0
-    r_pf = np.array([r * np.cos(theta), r * np.sin(theta), 0]) # calculates perifocal position vector of object in perifocal
+    r_pf = np.array([r * np.cos(theta), r * np.sin(theta), 0])
 
-    v_pf = np.array([ - (h / p) * np.sin(theta),  (h / p) * (e + np.cos(theta)), 0]) #calculates perifocal velocity vector of object
+    v_pf = np.array([ - (h / p) * np.sin(theta), (h / p) * (e + np.cos(theta)), 0])
 
-    rotate_matrix = R_z(raan) @ R_x(inc) @ R_z(omega) # conglomerates rotational matrices by multiplying them non-commutatively
-    # rotate around z-axis by Argument of Perigee (omega)
-    # then around x-axis by Inclination Angle (inc), 
-    # then finally around new z-axis (was rotated by second step) by Right Ascension of the Ascending Node (raan)
+    rotate_matrix = R_z(raan) @ R_x(inc) @ R_z(omega)
 
-    r_final = rotate_matrix @ r_pf # final multiplication of rotational matrices for the object in perifocal frame
+    r_final = rotate_matrix @ r_pf
     v_final = rotate_matrix @ v_pf
 
     return np.concatenate([r_final, v_final])
 
+
 def current_semimajor_axis(state, config):
-    r = np.linalg.norm(state[0:3])
-    v = np.linalg.norm(state[3:6])
-    subtraction = (config.mu / r) - ((v ** 2) / 2)
+    '''
+    Computes the object's instantaneous semi-major axis from its current state.
+
+    Args:
+        [state]: State vector whose elements 0:3 are the ECI position (m) and
+            3:6 the ECI velocity (m s^-1).
+        [config]: Simulation config, providing [mu] (m^3 s^-2).
+
+    Returns:
+        Semi-major axis (m), from the vis-viva equation.
+    '''
+    mag_r = np.linalg.norm(state[0:3])
+    mag_v = np.linalg.norm(state[3:6])
+    subtraction = (config.mu / mag_r) - ((mag_v ** 2) / 2)
 
     a = config.mu / (2 * subtraction)
 
     return a
 
+
 def current_orbital_period(state, config):
+    '''
+    Computes the object's instantaneous orbital period from its current state.
+
+    Args:
+        [state]: State vector whose elements 0:3 are the ECI position (m) and
+            3:6 the ECI velocity (m s^-1).
+        [config]: Simulation config, providing [mu] (m^3 s^-2).
+
+    Returns:
+        Orbital period (s), from Kepler's third law applied to the
+        instantaneous semi-major axis.
+    '''
     a = current_semimajor_axis(state, config)
     period = 2 * np.pi * np.sqrt((a ** 3) / config.mu)
 
     return period
-
-
-
-

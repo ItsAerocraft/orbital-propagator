@@ -16,18 +16,30 @@ from environment.stochastic import generate_f107_trajectory
 
 
 def minorgridlines():
+    '''
+    Adds major and minor gridlines to the current matplotlib axes.
+    '''
     plt.minorticks_on()
     plt.grid(True, which = "major", alpha = 0.3, linestyle = "--", linewidth = 1.5)
     plt.grid(True, which = "minor", alpha = 0.15, linestyle = ":", linewidth = 0.8)
 
+
 def plot_3D(x_array, y_array, z_array):
+    '''
+    Plots the 3D orbital trajectory.
+
+    Args:
+        [x_array]: Array of ECI x-positions (m).
+        [y_array]: Array of ECI y-positions (m).
+        [z_array]: Array of ECI z-positions (m).
+    '''
     fig = plt.figure(figsize = (10, 8))
     ax = fig.add_subplot(111, projection = "3d")
 
     x_range = x_array.max() - x_array.min() + 1
     y_range = y_array.max() - y_array.min() + 1
     z_range = z_array.max() - z_array.min() + 1
-    
+
     ax.set_box_aspect([x_range, y_range, z_range])
 
     ax.plot(x_array, y_array, z_array)
@@ -41,9 +53,18 @@ def plot_3D(x_array, y_array, z_array):
 
     plt.show()
 
+
 def plot_altitude(t_array, state_array, config):
+    '''
+    Plots altitude above ground level against time.
+
+    Args:
+        [t_array]: Array of sample times (s).
+        [state_array]: Array of state vectors, one per row, whose columns
+            0:3 are the ECI position (m).
+        [config]: Simulation config, providing [R] (m).
+    '''
     altitude_array = np.linalg.norm(state_array[ : , 0:3], axis = 1) - config.R
-    # [ : , 0:3] is array shape above, axis = 1 dictates that norm calculated at all rows independently
 
     plt.figure(figsize = (10, 6))
     plt.plot(t_array / 86400, altitude_array / 1000)
@@ -56,7 +77,18 @@ def plot_altitude(t_array, state_array, config):
 
     plt.show()
 
+
 def plot_omega(t_array, state_array, config):
+    '''
+    Plots body-frame angular velocity components and magnitude against time.
+
+    Args:
+        [t_array]: Array of sample times (s).
+        [state_array]: Array of state vectors, one per row, whose columns
+            10:13 are the body-frame angular velocity (rad s^-1).
+        [config]: Simulation config (unused; kept for signature consistency
+            with the other plot functions).
+    '''
     om_x_array, om_y_array, om_z_array = state_array[ : , 10], state_array[ : , 11], state_array[ : , 12]
     angvel_array = np.linalg.norm(state_array[ : , 10:13], axis = 1)
 
@@ -65,7 +97,7 @@ def plot_omega(t_array, state_array, config):
     plt.plot(t_array / 86400, om_y_array, label = "y component")
     plt.plot(t_array / 86400, om_z_array, label = "z component")
     plt.plot(t_array / 86400, angvel_array, label = "magnitude")
-    
+
     minorgridlines()
 
     plt.xlabel("Time / day", fontsize = 12)
@@ -75,13 +107,20 @@ def plot_omega(t_array, state_array, config):
     plt.legend()
     plt.show()
 
+
 def plot_silhouette(t_array, state_array, config):
+    '''
+    Plots the object's drag-reference silhouette area against time.
+
+    Args:
+        [t_array]: Array of sample times (s).
+        [state_array]: Array of state vectors, one per row.
+        [config]: Simulation config, providing [object] (shape flag).
+    '''
     area_array = np.array([
-        projected_area_cuboid(t, state_array[i], config) if config.object == "cuboid"
-        else projected_area_cylinder(t, state_array[i], config)
-        for i, t in enumerate(t_array) 
-        # creates two lists, one for i, and its corresponding ith position in t_array
-        #then loops through t values and i values (so state_array gets i'th position) and calls functions repeatedly
+        projected_area_cuboid(state_array[i], config) if config.object == "cuboid"
+        else projected_area_cylinder(state_array[i], config)
+        for i in range(len(t_array))
     ])
 
     plt.figure(figsize = (10,6))
@@ -95,7 +134,17 @@ def plot_silhouette(t_array, state_array, config):
 
     plt.show()
 
+
 def plot_stochastic(t_array_ref, all_altitude_arrays, config):
+    '''
+    Plots the min/max/average perigee altitude envelope across Monte Carlo runs.
+
+    Args:
+        [t_array_ref]: Reference array of sample times (s).
+        [all_altitude_arrays]: Array of per-run perigee altitude arrays (m),
+            interpolated onto [t_array_ref] (NaN outside a run's data range).
+        [config]: Simulation config, providing [runs] (number of Monte Carlo runs).
+    '''
     plt.figure(figsize = (10, 6))
 
     min_alt = np.nanmin(all_altitude_arrays, axis = 0)
@@ -110,15 +159,18 @@ def plot_stochastic(t_array_ref, all_altitude_arrays, config):
 
     minorgridlines()
 
-    
     plt.xlabel("Time / Day", fontsize = 12)
     plt.ylabel("Altitude / km", fontsize = 12)
     plt.title(f"Altitude against Time (Monte Carlo, {config.runs} runs)", fontsize = 14)
-    
+
     plt.legend()
     plt.show()
 
-def save_pix(): #if required
+
+def save_pix():
+    '''
+    Saves the current figures for each plot type to disk (if required).
+    '''
     plt.savefig("orbit.png", dpi = 100)
     plt.savefig("altitude.png", dpi = 100)
     plt.savefig("omega.png", dpi = 100)
@@ -126,15 +178,17 @@ def save_pix(): #if required
     plt.savefig("stochastic.png", dpi = 100)
     plt.close()
 
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 def execute():
+    '''
+    Runs the orbital propagation (single run or Monte Carlo stochastic batch,
+    based on user input) and plots the requested output.
+    '''
     start_time = time.perf_counter()
     config = Config()
 
-    inertial_values_0 = coe_to_cartesian(config.a_0, config.e, config.theta_0, 
-                                         config.omega_0, config.inc_0, config.raan_0, 
+    inertial_values_0 = coe_to_cartesian(config.a_0, config.e, config.theta_0,
+                                         config.omega_0, config.inc_0, config.raan_0,
                                          config
     )
     quaternion_values_0 = config.q_0
@@ -153,7 +207,7 @@ def execute():
     if graph_type == "stochastic":
         config.stochastic = True
         runs = config.runs
-        
+
         reentry_occurrence_count = 0
 
         all_altitude_arrays = []
@@ -188,7 +242,7 @@ def execute():
 
                         if value < previous_value and value < next_value:
 
-                            if len(t_array_peri) == 0: 
+                            if len(t_array_peri) == 0:
                                 t_array_peri.append(t_array[index])
                                 altitude_array_peri.append(altitude_array[index])
 
@@ -221,7 +275,7 @@ def execute():
         result = propagate_adaptive(dynamics, state_0, config)
 
         t_array = result.t
-        state_array = result.y.T # T switches output as its (6, step) not needed (step, 6)
+        state_array = result.y.T  # transpose: solve_ivp returns shape (6, steps), we need (steps, 6)
 
         x_array = state_array[:, 0]
         y_array = state_array[:, 1]
@@ -234,7 +288,7 @@ def execute():
                 print(f"Status: completed, re-entry ooccured after {result.t_events[0][0]/86400:.2f} hour(s).\n")
             else:
                 print(f"Status: completed, re-entry ooccured at day {result.t_events[0][0]/86400:.2f}.\n")
-  
+
     if graph_type == "orbit":
         plot_3D(x_array, y_array, z_array)
     elif graph_type == "altitude":
@@ -250,8 +304,6 @@ def execute():
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
-    print(f"Simulation completed in {elapsed_time:.2f} seconds.")      
+    print(f"Simulation completed in {elapsed_time:.2f} seconds.")
 
-# run simulation
 execute()
-
