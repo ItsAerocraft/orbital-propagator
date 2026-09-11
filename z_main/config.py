@@ -51,7 +51,7 @@ class Config:
     om_body_0: tuple = (0.01, 0, 0)  # (rad s^-1) [initial angular velocity components]
 
 
-    # ATMOSPHERE -get citation-
+    # ATMOSPHERE
     stochastic: bool = False  # [whether Monte-Carlo mode is chosen]
 
     f107_mean: float = 150.0  # (sfu) [mean solar radio flux value]
