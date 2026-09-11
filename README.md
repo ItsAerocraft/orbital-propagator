@@ -19,10 +19,10 @@ This project began as a rudimentary Excel spreadsheet model and has been extende
 | `z_main/` | Configuration, dynamics function, and integrator |
 | `forces/` | Gravity, drag, and J2/J3/J4 perturbation forces |
 | `torques/` | Gravity-gradient and aerodynamic torques |
-| `tumble/` | Quaternion kinematics, angular acceleration, inertia, silhouette area |
+| `tumble/` | Quaternion kinematics, angular acceleration, inertia, silhouette/cross-section area |
 | `conversion/` | Orbital element ↔ Cartesian, inertial ↔ body frame conversions |
 | `environment/` | Atmospheric density lookup, stochastic F10.7 model |
-| `simulate.py` | Entry point — runs the simulation and generates plots |
+| `simulate.py` | Entry point, runs the simulation and generates plots |
 
 ## Getting Started
 
