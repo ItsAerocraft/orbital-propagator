@@ -37,7 +37,7 @@ Graph inputs available include "orbit", "stochastic", "altitude", "silhouette", 
 
 ## Background & Theory
 
-A full technical writeup, covering the state vector, integration method, perturbation and drag models, and attitude dynamics derivations, is available ([here](https://drive.google.com/file/d/1MmETuXVPX74q5AQh2TI0qvaK1W6nQ9bC/view?usp=sharing)).
+A full technical writeup, covering the state vector, integration method, perturbation and drag models, and attitude dynamics derivations, is available ([here](https://drive.google.com/file/d/1rn8725VqUK_gLDFTKHJGWjeKTiW_odit/view?usp=sharing)).
 
 ## Status & Next Steps
 
