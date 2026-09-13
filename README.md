@@ -35,6 +35,24 @@ Model parameters (orbit, satellite geometry, integration settings) are set in `z
 
 Graph inputs available include "orbit", "stochastic", "altitude", "silhouette", and "omega".
 
+## Results
+
+**Object Orbit around earth ("orbit"):** the trajectory of the object as it orbits around the Earth.
+
+![Orbit](docs/images/orbit.png)
+
+**Silhouette area over time ("silhouette"):** the projected cross-sectional area oscillates as the satellite tumbles, which drives the time-varying drag force.
+
+![Silhouette area against time](docs/images/silhouette_area.png)
+
+**Monte Carlo altitude decay (15 runs) ("stochastic"):** decay uncertainty grows over time as stochastic F10.7 variation compounds across the propagation window.
+
+![Altitude against time, Monte Carlo](docs/images/altitude_montecarlo.png)
+
+**Single-run altitude decay ("decay"):** periapsis and apoapsis oscillation shown as a filled band, with a sharp final descent as drag intensifies near reentry.
+
+![Altitude against time, single run](docs/images/altitude_singlerun.png)
+
 ## Background & Theory
 
 A full technical writeup, covering the state vector, integration method, perturbation and drag models, and attitude dynamics derivations, is available ([here](https://drive.google.com/file/d/1rn8725VqUK_gLDFTKHJGWjeKTiW_odit/view?usp=sharing)).
