@@ -2,7 +2,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from plotting.plot_style import minorgridlines
+from plotting.style import minorgridlines
 
 
 def plot_stochastic(t_array_ref, all_altitude_arrays, config):

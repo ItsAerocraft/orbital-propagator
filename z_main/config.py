@@ -34,7 +34,7 @@ class Config:
     T_orbit: float = 2 * np.pi * (((a_0 ** 3) / mu) ** 0.5)  # (s) [initial period of orbit]
 
     # SATELLITE
-    m: float = 1000  # (kg) [mass of satellite]
+    m: float = 2.0  # (kg) [mass of satellite]
     Cd: float = 2.2  # (unitless) [drag coefficient]
 
     radius_cylinder: float = 1.0  # (m) [radius of cylindrical satellite]
@@ -47,7 +47,7 @@ class Config:
     # TUMBLE
     r_cp: tuple = (0.05, 0.02, 0.01)  # (m) [vector from center of mass to center of pressure, approximated]
 
-    q_0: tuple = (1, 0, 0, 0)  # (unitless) [initial quaternion of turn (q0) and axis (q1, q2, q3)]
+    q_0: tuple = (0.965926, 0.258819, 0, 0)  # (unitless) [initial quaternion of turn (q0) and axis (q1, q2, q3); 30 deg about x]
     om_body_0: tuple = (0.01, 0, 0)  # (rad s^-1) [initial angular velocity components]
 
 
@@ -76,22 +76,24 @@ class Config:
 
     # SELECTION
     object: str = "cuboid"  # (cylinder / cuboid) [chosen shape of satellite]
+    controller: str = "none"  # (none / pd / contraction) [chosen controller type; single and stochastic modes always use none]
     runs: int = 15  # (integer) [number of runs for Monte-Carlo simulation, if chosen]
 
 
 # CONTROL
-KP = 2.0 # (unitless) [PD gain]
-KD = 3.0 # (unitless) [PD gain]
+KP = 0.0076 # (N m) [PD gain; 2 * I * wn^2 for I ~ 0.0038 kg m^2, wn = 1 rad s^-1]
+KD = 0.0076 # (N m s) [PD gain; 2 * zeta * wn * I for zeta = 1 (critically damped)]
 
-TAU_MAX = 0.006 # (N m) [actuator maximum torque limit]
+TAU_MAX = 0.001 # (N m) [actuator maximum torque limit]
 
 Q_TARGET = np.array([1, 0, 0, 0]) # (unitless) [target orientation quaternion]
 
-CONTROLLER_TYPE = "pd" # (pd / contraction) [chosen controller type for simulation]
+COMPARE_DURATION = 600 # (s) [simulated time for the controller comparison]
+SETTLE_BAND = 0.1 # (deg) [considered as settled once attitude error stays below value]
 
 # CONTRACTION
-LAMBDA = 0.05 # (unitless) [contraction rate]
+LAMBDA = 0.9 # (s^-1) [contraction rate]
 N_SAMPLES = 100 # (unitless) [number of states sampled for LMI]
 
-OMEGA_MAX = 0.5 # (rad s^-1) [maximum spin in region]
-ERROR_MAX = 0.5 # (rad) [maximum attitude error]
+OMEGA_MAX = 0.9 # (rad s^-1) [maximum spin in region]
+ERROR_MAX = 0.9 # (rad) [maximum attitude error]

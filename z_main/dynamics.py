@@ -1,6 +1,6 @@
 import numpy as np
 
-from z_main.config import CONTROLLER_TYPE, KP, KD, TAU_MAX, Q_TARGET
+from z_main.config import KP, KD, TAU_MAX, Q_TARGET
 
 from forces.force_gravity import gravity_accel
 from forces.force_drag import drag_accel
@@ -44,7 +44,7 @@ def dynamics(t, state, config):
     q_dot = quaternion_derivative(q, omega)
 
     tau_d = gravgrad_torque(t, state, config) + aerod_torque(t, state, config)
-    tau_c = get_control_torque(q, omega)
+    tau_c = get_control_torque(q, omega, config)
 
     torque = tau_d + tau_c
 

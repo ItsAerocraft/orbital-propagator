@@ -28,12 +28,12 @@ def sample_states(n, error_max, omega_max):
 
         states.append(np.concatenate([q, omega]))
 
-        for q_sign in [-1, 1]:
-            for omega_sign in [-1, 1]:
-                q_corner = np.array([q_sign * error_max, 0, 0])
-                omega_corner = np.array([omega_sign * error_max, 0, 0])
+    for q_sign in [-1, 1]:
+        for omega_sign in [-1, 1]:
+            q_corner = np.array([q_sign * error_max, 0, 0])
+            omega_corner = np.array([omega_sign * omega_max, 0, 0])
 
-                states.append(np.concatenate([q_corner, omega_corner]))
+            states.append(np.concatenate([q_corner, omega_corner]))
 
     return states
 

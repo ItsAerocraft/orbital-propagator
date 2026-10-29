@@ -1,37 +1,37 @@
 import time
 
-import os
-
 import numpy as np
 
 from conversion.convert_elements import coe_to_cartesian, current_orbital_period
 
-from z_main.config import Config, CONTROLLER_TYPE
+from z_main.config import Config
 from z_main.integrators import propagate_adaptive
 from z_main.dynamics import dynamics
 
 from environment.stochastic import generate_f107_trajectory
 
-from control.synthesize import synthesize
+from control.compare import compare_controllers
 
-from plotting.plot_orbit import plot_3D
-from plotting.plot_altitude import plot_altitude
-from plotting.plot_silhouette import plot_silhouette
+from plotting.plot_single import plot_single_run
 from plotting.plot_stochastic import plot_stochastic
+from plotting.plot_control import plot_comparison
 
 
-def execute():
+MODES = ["single", "stochastic", "control"]
+
+
+def initial_state(config):
     '''
-    Runs the orbital propagation (single run or Monte Carlo stochastic batch,
-    based on user input) and plots the requested output.
+    Builds the initial 13-element state vector from the config.
+
+    Args:
+        [config]: Simulation config, providing the classical orbital elements,
+            [q_0] and [om_body_0].
+
+    Returns:
+        13-element array of ECI position (m), ECI velocity (m s^-1),
+        orientation quaternion (unitless) and body-frame angular velocity (rad s^-1).
     '''
-    start_time = time.perf_counter()
-    config = Config()
-
-    if CONTROLLER_TYPE == "contraction" and not os.path.exists('control/K.npy'):
-        print("K.npy not found. Running synthesize.py...")
-        synthesize()
-
     inertial_values_0 = coe_to_cartesian(config.a_0, config.e, config.theta_0,
                                          config.omega_0, config.inc_0, config.raan_0,
                                          config
@@ -39,122 +39,161 @@ def execute():
     quaternion_values_0 = config.q_0
     omega_values_0 = config.om_body_0
 
-    state_0 = np.concatenate([inertial_values_0, quaternion_values_0, omega_values_0])
+    return np.concatenate([inertial_values_0, quaternion_values_0, omega_values_0])
 
-    print("")
-    graph_type = input("Enter graph type or command: ")
 
-    if graph_type in ["altitude", "orbit", "silhouette", "stochastic"]:
-        print("Running simulation, graph type = "+ graph_type + "\n")
+def run_single(config, state_0):
+    '''
+    Runs a single propagation over the configured duration and prints its
+    re-entry status.
 
-    elif graph_type == "synthesize":
-        if not os.path.exists('control/K.npy'):
-            print("K.npy not found. Running synthesize.py...")
-            synthesize()
-        else:
-            print("K.npy found, nothing to change.")
+    Args:
+        [config]: Simulation config.
+        [state_0]: Initial 13-element state vector.
 
+    Returns:
+        Tuple of ([t_array], [state_array]): sample times (s) and state
+        vectors, one per row.
+    '''
+    result = propagate_adaptive(dynamics, state_0, config)
+
+    t_array = result.t
+    state_array = result.y.T  # transpose: solve_ivp returns shape (13, steps), we need (steps, 13)
+
+    if result.status == 0:
+        print("Status: completed, no re-entry occurrence.")
     else:
-        raise ValueError("Invalid graph type.")
+        if result.t_events[0][0] <= 86400:
+            print(f"Status: completed, re-entry ooccured after {result.t_events[0][0]/86400:.2f} hour(s).\n")
+        else:
+            print(f"Status: completed, re-entry ooccured at day {result.t_events[0][0]/86400:.2f}.\n")
 
-    if graph_type == "stochastic":
-        config.stochastic = True
-        runs = config.runs
+    return t_array, state_array
 
-        reentry_occurrence_count = 0
 
-        all_altitude_arrays = []
-        reentry_array = []
+def run_stochastic(config, state_0):
+    '''
+    Runs the Monte Carlo batch, each run with its own stochastic F10.7
+    trajectory, and prints how many runs re-entered.
 
-        t_array_ref = np.linspace(0, config.T, 500)
+    Args:
+        [config]: Simulation config, providing [runs] and [T] (s).
+        [state_0]: Initial 13-element state vector.
 
-        for run_index in range(runs):
-            try:
-                t_samples, f107_samples = generate_f107_trajectory(config, seed = run_index)
-                config.f107_trajectory = (t_samples, f107_samples)
+    Returns:
+        Tuple of ([t_array_ref], [all_altitude_arrays]): the reference sample
+        times (s) and each run's perigee altitude (m) interpolated onto them.
+    '''
+    config.stochastic = True
+    runs = config.runs
 
-                result = []
-                result = propagate_adaptive(dynamics, state_0, config)
+    reentry_occurrence_count = 0
 
-                t_array = result.t
-                state_array = result.y.T
+    all_altitude_arrays = []
+    reentry_array = []
 
-                altitude_array = np.linalg.norm(state_array[ : , 0:3], axis = 1) - config.R
+    t_array_ref = np.linspace(0, config.T, 500)
 
-                t_array_peri = []
-                altitude_array_peri = []
+    for run_index in range(runs):
+        try:
+            t_samples, f107_samples = generate_f107_trajectory(config, seed = run_index)
+            config.f107_trajectory = (t_samples, f107_samples)
 
-                for index in range(1, len(altitude_array) - 1):
-                    value = altitude_array[index]
-                    previous_value = altitude_array[index - 1]
-                    next_value = altitude_array[index + 1]
+            result = propagate_adaptive(dynamics, state_0, config)
 
-                    local_period = current_orbital_period(state_array[index], config)
+            t_array = result.t
+            state_array = result.y.T
 
-                    if abs(config.a_0 - (value + config.R)) < 0.05 * (config.a_0 * (1 - config.e)):
+            altitude_array = np.linalg.norm(state_array[ : , 0:3], axis = 1) - config.R
 
-                        if value < previous_value and value < next_value:
+            t_array_peri = []
+            altitude_array_peri = []
 
-                            if len(t_array_peri) == 0:
+            for index in range(1, len(altitude_array) - 1):
+                value = altitude_array[index]
+                previous_value = altitude_array[index - 1]
+                next_value = altitude_array[index + 1]
+
+                local_period = current_orbital_period(state_array[index], config)
+
+                if abs(config.a_0 - (value + config.R)) < 0.05 * (config.a_0 * (1 - config.e)):
+
+                    if value < previous_value and value < next_value:
+
+                        if len(t_array_peri) == 0:
+                            t_array_peri.append(t_array[index])
+                            altitude_array_peri.append(altitude_array[index])
+
+                        elif len(t_array_peri) > 0:
+                            previous_accepted_time = t_array_peri[-1]
+
+                            if t_array[index] - previous_accepted_time > (0.8 * local_period):
                                 t_array_peri.append(t_array[index])
                                 altitude_array_peri.append(altitude_array[index])
 
-                            elif len(t_array_peri) > 0:
-                                previous_accepted_time = t_array_peri[-1]
+            altitude_array_interp = np.interp(t_array_ref, t_array_peri, altitude_array_peri, left = np.nan, right = np.nan)
 
-                                if t_array[index] - previous_accepted_time > (0.8 * local_period):
-                                    t_array_peri.append(t_array[index])
-                                    altitude_array_peri.append(altitude_array[index])
+            all_altitude_arrays.append(altitude_array_interp)
 
-                altitude_array_interp = np.interp(t_array_ref, t_array_peri, altitude_array_peri, left = np.nan, right = np.nan)
+            if result.status == 1:
+                reentry_occurrence_count += 1
+                reentry_array.append(run_index)
 
-                all_altitude_arrays.append(altitude_array_interp)
+        except Exception as e:
+            print(f"{run_index} failed: {e}")
+            continue
 
-                if result.status == 1:
-                    reentry_occurrence_count += 1
-                    reentry_array.append(run_index)
+    print("Status: completed, re-entry occured", reentry_occurrence_count, "time(s).")
 
-            except Exception as e:
-                print(f"{run_index} failed: {e}")
-                continue
+    if reentry_occurrence_count != 0:
+        print("re-entry occured on runs", reentry_array, ".")
 
-        print("Status: completed, re-entry occured", reentry_occurrence_count, "time(s).")
+    return t_array_ref, all_altitude_arrays
 
-        if reentry_occurrence_count != 0:
-            print("re-entry occured on runs", reentry_array, ".")
 
-    else:
-        result = []
-        result = propagate_adaptive(dynamics, state_0, config)
+def execute():
+    '''
+    Asks for a mode (single / stochastic / control), runs it, and plots its graphs.
+    '''
+    print("")
+    print("Please visit config.py (in folder z_main), to modify constants.")
+    mode = input(f"Enter mode ({' / '.join(MODES)}): ").strip().lower()
 
-        t_array = result.t
-        state_array = result.y.T  # transpose: solve_ivp returns shape (6, steps), we need (steps, 6)
+    if mode not in MODES:
+        raise ValueError(f"Invalid mode: {mode!r} (expected one of {', '.join(MODES)}).")
 
-        x_array = state_array[:, 0]
-        y_array = state_array[:, 1]
-        z_array = state_array[:, 2]
+    print("Running simulation, mode = " + mode + "\n")
 
-        if result.status == 0:
-            print("Status: completed, no re-entry occurrence.")
-        else:
-            if result.t_events[0][0] <= 86400:
-                print(f"Status: completed, re-entry ooccured after {result.t_events[0][0]/86400:.2f} hour(s).\n")
-            else:
-                print(f"Status: completed, re-entry ooccured at day {result.t_events[0][0]/86400:.2f}.\n")
+    start_time = time.perf_counter()
+    config = Config()
 
-    if graph_type == "orbit":
-        plot_3D(x_array, y_array, z_array)
-    elif graph_type == "altitude":
-        plot_altitude(t_array, state_array, config)
-    elif graph_type == "silhouette":
-        plot_silhouette(t_array, state_array, config)
-    elif graph_type == "stochastic":
-        plot_stochastic(t_array_ref, all_altitude_arrays, config)
-    else:
-        raise ValueError("Invalid graph type.")
+    # single and stochastic study uncontrolled tumbling; control mode sets its own controllers
+    if mode in ["single", "stochastic"]:
+        config.controller = "none"
 
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
+    state_0 = initial_state(config)
+
+    if mode == "single":
+        t_array, state_array = run_single(config, state_0)
+
+    elif mode == "stochastic":
+        t_array_ref, all_altitude_arrays = run_stochastic(config, state_0)
+
+    elif mode == "control":
+        results, margins = compare_controllers(config, state_0)
+
+    elapsed_time = time.perf_counter() - start_time
     print(f"Simulation completed in {elapsed_time:.2f} seconds.")
 
-execute()
+    if mode == "single":
+        plot_single_run(t_array, state_array, config)
+
+    elif mode == "stochastic":
+        plot_stochastic(t_array_ref, all_altitude_arrays, config)
+
+    elif mode == "control":
+        plot_comparison(results, margins)
+
+
+if __name__ == "__main__":
+    execute()
