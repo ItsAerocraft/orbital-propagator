@@ -25,6 +25,7 @@ def run_synthesis():
     paths = ["control/K.npy", "control/M.npy"]
     before = [os.path.getmtime(p) if os.path.exists(p) else None for p in paths]
 
+    print("")
     print("Running synthesis...")
     synthesize()
 

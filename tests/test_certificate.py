@@ -3,7 +3,7 @@ import numpy as np
 from control.jacobian import jacobian
 from control.contraction import contraction_control, load_gain
 
-from z_main.config import Config, TAU_MAX
+from z_main.config import Config, TAU_MAX, ERROR_MAX, OMEGA_MAX
 
 from tumble.inertia import inertia
 
@@ -49,3 +49,15 @@ def test_closed_loop_stability_at_target():
     eigs = np.linalg.eigvals(A_sum)
     max_real_part = np.max(np.real(eigs))
     assert max_real_part < 0, f"Closed loop is not stable! Max real part: {max_real_part}"
+
+def test_gain_respects_torque_limit():
+    """Unclipped torque K x must stay within TAU_MAX across the synthesis region."""
+    rng = np.random.default_rng(0)
+    worst = 0.0
+    for _ in range(2000):
+        q = rng.standard_normal(3)
+        q = q / np.linalg.norm(q) * rng.uniform(0, ERROR_MAX)
+        omega = rng.standard_normal(3)
+        omega = omega / np.linalg.norm(omega) * rng.uniform(0, OMEGA_MAX)
+        worst = max(worst, np.max(np.abs(K @ np.concatenate([q, omega]))))
+    assert worst <= TAU_MAX * (1 + 1e-6), f"Max |K x| = {worst} exceeds TAU_MAX = {TAU_MAX}"

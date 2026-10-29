@@ -79,6 +79,9 @@ class Config:
     controller: str = "none"  # (none / pd / contraction) [chosen controller type; single and stochastic modes always use none]
     runs: int = 15  # (integer) [number of runs for Monte-Carlo simulation, if chosen]
 
+    kp: float = None  # (N m) [PD gain override for the gain sweep; None uses KP]
+    kd: float = None  # (N m s) [PD gain override for the gain sweep; None uses KD]
+
 
 # CONTROL
 KP = 0.0076 # (N m) [PD gain; 2 * I * wn^2 for I ~ 0.0038 kg m^2, wn = 1 rad s^-1]
@@ -92,8 +95,9 @@ COMPARE_DURATION = 600 # (s) [simulated time for the controller comparison]
 SETTLE_BAND = 0.1 # (deg) [considered as settled once attitude error stays below value]
 
 # CONTRACTION
-LAMBDA = 0.9 # (s^-1) [contraction rate]
+# feasibility needs roughly I * LAMBDA * OMEGA_MAX <= TAU_MAX (0.0038 * 0.2 * 0.1 ~ 8e-5 N m)
+LAMBDA = 0.2 # (s^-1) [contraction rate; synthesis halves it up to twice if infeasible]
 N_SAMPLES = 100 # (unitless) [number of states sampled for LMI]
 
-OMEGA_MAX = 0.9 # (rad s^-1) [maximum spin in region]
-ERROR_MAX = 0.9 # (rad) [maximum attitude error]
+OMEGA_MAX = 0.1 # (rad s^-1) [maximum spin in region]
+ERROR_MAX = 0.3 # (unitless) [maximum quaternion error vector norm, sin(theta / 2); 0.3 ~ 35 deg, covers the initial 30 deg]

@@ -22,7 +22,7 @@ def event_reentry(t, state, config):
     return mag_r - config.R
 
 
-def propagate_adaptive(function, state_0, config):
+def propagate_adaptive(function, state_0, config, t_eval = None):
     '''
     Integrates a given dynamics function (e.g. [dynamics]) over the configured
     duration using an adaptive-step solve_ivp, terminating early on re-entry.
@@ -32,10 +32,12 @@ def propagate_adaptive(function, state_0, config):
             the state derivative vector.
         [state_0]: Initial state vector, in the same units expected by [function].
         [config]: Simulation config, providing [T] (s).
+        [t_eval]: Output sample times (s); None gives 2000 evenly spaced
+            samples between 0 and [T].
 
     Returns:
-        The scipy `OdeResult` from solve_ivp, containing up to 2000 adaptive
-        time-steps between 0 and [T].
+        The scipy `OdeResult` from solve_ivp, sampled at [t_eval] between 0
+        and [T].
 
     Wraps [function] and the re-entry event to the (t, state) signature
     solve_ivp requires, since it cannot pass through [config]. The re-entry
@@ -49,7 +51,8 @@ def propagate_adaptive(function, state_0, config):
     wrap_reentry.terminal = True
     wrap_reentry.direction = -1
 
-    t_eval = np.linspace(0, config.T, 2000)
+    if t_eval is None:
+        t_eval = np.linspace(0, config.T, 2000)
 
     result = solve_ivp(
         fun = wrap_dynamics,

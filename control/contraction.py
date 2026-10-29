@@ -10,7 +10,12 @@ def load_gain():
     except FileNotFoundError:
         K = None
 
-def contraction_control(q_e_vec, omega, tau_max):
+def set_gain(K_new):
+    global K
+
+    K = K_new
+
+def contraction_raw(q_e_vec, omega):
 
     if K is None:
         raise FileNotFoundError(
@@ -22,7 +27,11 @@ def contraction_control(q_e_vec, omega, tau_max):
     
     # The control law: tau = K @ x_err
     # Shape check: (3x6) @ (6x1) = (3x1)
-    tau = K @ x_err
+    return K @ x_err
+
+def contraction_control(q_e_vec, omega, tau_max):
+
+    tau = contraction_raw(q_e_vec, omega)
     
     # Enforce physical actuator limits
     return np.clip(tau, -tau_max, tau_max)

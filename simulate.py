@@ -4,20 +4,21 @@ import numpy as np
 
 from conversion.convert_elements import coe_to_cartesian, current_orbital_period
 
-from z_main.config import Config
+from z_main.config import Config, COMPARE_DURATION
 from z_main.integrators import propagate_adaptive
 from z_main.dynamics import dynamics
 
 from environment.stochastic import generate_f107_trajectory
 
 from control.compare import compare_controllers
+from control.sweep import run_sweep, print_sweep
 
 from plotting.plot_single import plot_single_run
 from plotting.plot_stochastic import plot_stochastic
-from plotting.plot_control import plot_comparison
+from plotting.plot_control import plot_comparison, plot_sweep
 
 
-MODES = ["single", "stochastic", "control"]
+MODES = ["single", "stochastic", "control", "sweep"]
 
 
 def initial_state(config):
@@ -182,6 +183,10 @@ def execute():
     elif mode == "control":
         results, margins = compare_controllers(config, state_0)
 
+    elif mode == "sweep":
+        sweep = run_sweep(config, state_0)
+        print_sweep(sweep)
+
     elapsed_time = time.perf_counter() - start_time
     print(f"Simulation completed in {elapsed_time:.2f} seconds.")
 
@@ -193,6 +198,9 @@ def execute():
 
     elif mode == "control":
         plot_comparison(results, margins)
+
+    elif mode == "sweep":
+        plot_sweep(sweep, COMPARE_DURATION)
 
 
 if __name__ == "__main__":
