@@ -1,6 +1,6 @@
 import numpy as np
 
-from tumble.inertia import inertia_cuboid, inertia_cylinder
+from tumble.inertia import inertia
 
 
 def angular_acceleration(omega, torque, config):
@@ -26,17 +26,9 @@ def angular_acceleration(omega, torque, config):
     om_x, om_y, om_z = omega
     tao_x, tao_y, tao_z = torque
 
-    if config.object == "cylinder":
-        mass, radius, height = config.m, config.radius_cylinder, config.height_cylinder
-        I = inertia_cylinder(mass, radius, height)
+    I = inertia(config)
 
-        I_xx, I_yy, I_zz = I[0, 0], I[1, 1], I[2, 2]
-
-    elif config.object == "cuboid":
-        mass, length, width, height = config.m, config.length_cuboid, config.width_cuboid, config.height_cuboid
-        I = inertia_cuboid(mass, length, width, height)
-
-        I_xx, I_yy, I_zz = I[0, 0], I[1, 1], I[2, 2]
+    I_xx, I_yy, I_zz = I[0, 0], I[1, 1], I[2, 2]
 
     om_x_dot = (1 / I_xx) * (tao_x - ((I_zz - I_yy) * om_y * om_z))
     om_y_dot = (1 / I_yy) * (tao_y - ((I_xx - I_zz) * om_x * om_z))

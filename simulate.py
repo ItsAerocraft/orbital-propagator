@@ -4,11 +4,7 @@ import os
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 from conversion.convert_elements import coe_to_cartesian, current_orbital_period
-
-from tumble.area import projected_area_cylinder, projected_area_cuboid
 
 from z_main.config import Config, CONTROLLER_TYPE
 from z_main.integrators import propagate_adaptive
@@ -16,173 +12,12 @@ from z_main.dynamics import dynamics
 
 from environment.stochastic import generate_f107_trajectory
 
-from torques.torque_controller import reset_controller
-
 from control.synthesize import synthesize
 
-
-def minorgridlines():
-    '''
-    Adds major and minor gridlines to the current matplotlib axes.
-    '''
-    plt.minorticks_on()
-    plt.grid(True, which = "major", alpha = 0.3, linestyle = "--", linewidth = 1.5)
-    plt.grid(True, which = "minor", alpha = 0.15, linestyle = ":", linewidth = 0.8)
-
-
-def plot_3D(x_array, y_array, z_array):
-    '''
-    Plots the 3D orbital trajectory.
-
-    Args:
-        [x_array]: Array of ECI x-positions (m).
-        [y_array]: Array of ECI y-positions (m).
-        [z_array]: Array of ECI z-positions (m).
-    '''
-    fig = plt.figure(figsize = (10, 8))
-    ax = fig.add_subplot(111, projection = "3d")
-
-    x_range = x_array.max() - x_array.min() + 1
-    y_range = y_array.max() - y_array.min() + 1
-    z_range = z_array.max() - z_array.min() + 1
-
-    ax.set_box_aspect([x_range, y_range, z_range])
-
-    ax.plot(x_array, y_array, z_array)
-
-    ax.scatter([0], [0], [0], color = "red", s = 50, label = "Earth center")
-    ax.legend()
-
-    ax.set_xlabel("x / m")
-    ax.set_ylabel("y / m")
-    ax.set_zlabel("z / m")
-
-    plt.show()
-
-
-def plot_altitude(t_array, state_array, config):
-    '''
-    Plots altitude above ground level against time.
-
-    Args:
-        [t_array]: Array of sample times (s).
-        [state_array]: Array of state vectors, one per row, whose columns
-            0:3 are the ECI position (m).
-        [config]: Simulation config, providing [R] (m).
-    '''
-    altitude_array = np.linalg.norm(state_array[ : , 0:3], axis = 1) - config.R
-
-    plt.figure(figsize = (10, 6))
-    plt.plot(t_array / 86400, altitude_array / 1000)
-
-    minorgridlines()
-
-    plt.xlabel("Time / day", fontsize = 12)
-    plt.ylabel("Altitude / km", fontsize = 12)
-    plt.title("Altitude against Time", fontsize = 14)
-
-    plt.show()
-
-
-def plot_omega(t_array, state_array, config):
-    '''
-    Plots body-frame angular velocity components and magnitude against time.
-
-    Args:
-        [t_array]: Array of sample times (s).
-        [state_array]: Array of state vectors, one per row, whose columns
-            10:13 are the body-frame angular velocity (rad s^-1).
-        [config]: Simulation config (unused; kept for signature consistency
-            with the other plot functions).
-    '''
-    om_x_array, om_y_array, om_z_array = state_array[ : , 10], state_array[ : , 11], state_array[ : , 12]
-    angvel_array = np.linalg.norm(state_array[ : , 10:13], axis = 1)
-
-    plt.figure(figsize = (10, 6))
-    plt.plot(t_array / 86400, om_x_array, label = "x component")
-    plt.plot(t_array / 86400, om_y_array, label = "y component")
-    plt.plot(t_array / 86400, om_z_array, label = "z component")
-    plt.plot(t_array / 86400, angvel_array, label = "magnitude")
-
-    minorgridlines()
-
-    plt.xlabel("Time / day", fontsize = 12)
-    plt.ylabel("Angular Velocity / rad$^{-1}$", fontsize = 12)
-    plt.title("Angular Velocity against Time", fontsize = 14)
-
-    plt.legend()
-    plt.show()
-
-
-def plot_silhouette(t_array, state_array, config):
-    '''
-    Plots the object's drag-reference silhouette area against time.
-
-    Args:
-        [t_array]: Array of sample times (s).
-        [state_array]: Array of state vectors, one per row.
-        [config]: Simulation config, providing [object] (shape flag).
-    '''
-    area_array = np.array([
-        projected_area_cuboid(state_array[i], config) if config.object == "cuboid"
-        else projected_area_cylinder(state_array[i], config)
-        for i in range(len(t_array))
-    ])
-
-    plt.figure(figsize = (10,6))
-    plt.plot(t_array / 86400, area_array)
-
-    minorgridlines()
-
-    plt.xlabel("Time / day", fontsize = 12)
-    plt.ylabel("Silhouette Area / m$^2$", fontsize = 12)
-    plt.title("Silhouette Area against Time")
-
-    plt.show()
-
-
-def plot_stochastic(t_array_ref, all_altitude_arrays, config):
-    '''
-    Plots the min/max/average perigee altitude envelope across Monte Carlo runs.
-
-    Args:
-        [t_array_ref]: Reference array of sample times (s).
-        [all_altitude_arrays]: Array of per-run perigee altitude arrays (m),
-            interpolated onto [t_array_ref] (NaN outside a run's data range).
-        [config]: Simulation config, providing [runs] (number of Monte Carlo runs).
-    '''
-    plt.figure(figsize = (10, 6))
-
-    min_alt = np.nanmin(all_altitude_arrays, axis = 0)
-    max_alt = np.nanmax(all_altitude_arrays, axis = 0)
-    avg_alt = np.nanmean(all_altitude_arrays, axis = 0)
-
-    plt.plot(t_array_ref / 86400, avg_alt / 1000, label = "average")
-    plt.scatter(t_array_ref / 86400, min_alt / 1000, s = 10, color = "red", label = "minimum")
-    plt.scatter(t_array_ref / 86400, max_alt / 1000, s = 10, color = "blue", label = "maximum")
-
-    plt.fill_between(t_array_ref / 86400, max_alt / 1000, min_alt / 1000, color = "grey", alpha = 0.4)
-
-    minorgridlines()
-
-    plt.xlabel("Time / Day", fontsize = 12)
-    plt.ylabel("Altitude / km", fontsize = 12)
-    plt.title(f"Altitude against Time (Monte Carlo, {config.runs} runs)", fontsize = 14)
-
-    plt.legend()
-    plt.show()
-
-
-def save_pix():
-    '''
-    Saves the current figures for each plot type to disk (if required).
-    '''
-    plt.savefig("orbit.png", dpi = 100)
-    plt.savefig("altitude.png", dpi = 100)
-    plt.savefig("omega.png", dpi = 100)
-    plt.savefig("silhouette.png", dpi = 100)
-    plt.savefig("stochastic.png", dpi = 100)
-    plt.close()
+from plotting.plot_orbit import plot_3D
+from plotting.plot_altitude import plot_altitude
+from plotting.plot_silhouette import plot_silhouette
+from plotting.plot_stochastic import plot_stochastic
 
 
 def execute():
@@ -196,8 +31,6 @@ def execute():
     if CONTROLLER_TYPE == "contraction" and not os.path.exists('control/K.npy'):
         print("K.npy not found. Running synthesize.py...")
         synthesize()
-    
-    reset_controller()
 
     inertial_values_0 = coe_to_cartesian(config.a_0, config.e, config.theta_0,
                                          config.omega_0, config.inc_0, config.raan_0,
@@ -211,7 +44,7 @@ def execute():
     print("")
     graph_type = input("Enter graph type or command: ")
 
-    if graph_type in ["altitude", "orbit", "omega", "silhouette", "stochastic"]:
+    if graph_type in ["altitude", "orbit", "silhouette", "stochastic"]:
         print("Running simulation, graph type = "+ graph_type + "\n")
 
     elif graph_type == "synthesize":
@@ -313,8 +146,6 @@ def execute():
         plot_3D(x_array, y_array, z_array)
     elif graph_type == "altitude":
         plot_altitude(t_array, state_array, config)
-    elif graph_type == "omega":
-        plot_omega(t_array, state_array, config)
     elif graph_type == "silhouette":
         plot_silhouette(t_array, state_array, config)
     elif graph_type == "stochastic":

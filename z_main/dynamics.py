@@ -1,6 +1,6 @@
 import numpy as np
 
-from z_main.config import CONTROLLER_TYPE, KP, KD, KI, TAU_MAX, Q_TARGET
+from z_main.config import CONTROLLER_TYPE, KP, KD, TAU_MAX, Q_TARGET
 
 from forces.force_gravity import gravity_accel
 from forces.force_drag import drag_accel

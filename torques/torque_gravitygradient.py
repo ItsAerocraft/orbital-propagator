@@ -2,7 +2,7 @@ import numpy as np
 
 from conversion.convert_body import inertial_to_body
 
-from tumble.inertia import inertia_cuboid, inertia_cylinder
+from tumble.inertia import inertia
 
 
 def gravgrad_torque(t, state, config):
@@ -35,13 +35,7 @@ def gravgrad_torque(t, state, config):
     r_hat_inertial = state[0:3] / mag_r
     r_hat_body = inertial_to_body(r_hat_inertial, q)
 
-    if config.object == "cylinder":
-        mass, radius, height = config.m, config.radius_cylinder, config.height_cylinder
-        I = inertia_cylinder(mass, radius, height)
-
-    elif config.object == "cuboid":
-        mass, length, width, height = config.m, config.length_cuboid, config.width_cuboid, config.height_cuboid
-        I = inertia_cuboid(mass, length, width, height)
+    I = inertia(config)
 
     I_mult_r_hat = I @ r_hat_body
 

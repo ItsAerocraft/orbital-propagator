@@ -7,21 +7,10 @@ from control.jacobian import jacobian
 
 from z_main.config import Config, LAMBDA, N_SAMPLES, OMEGA_MAX, ERROR_MAX
 
-from tumble.inertia import inertia_cylinder, inertia_cuboid
+from tumble.inertia import inertia
 
-def getI(config):
-    if config.object == "cylinder":
-        mass, radius, height = config.m, config.radius_cylinder, config.height_cylinder
-        I = inertia_cylinder(mass, radius, height)
 
-    elif config.object == "cuboid":
-        mass, length, width, height = config.m, config.length_cuboid, config.width_cuboid, config.height_cuboid
-        I = inertia_cuboid(mass, length, width, height)
-
-    return I
-     
-
-I = getI(Config())
+I = inertia(Config())
 
 I_inv = np.linalg.inv(I)
 
@@ -39,10 +28,17 @@ def sample_states(n, error_max, omega_max):
 
         states.append(np.concatenate([q, omega]))
 
+        for q_sign in [-1, 1]:
+            for omega_sign in [-1, 1]:
+                q_corner = np.array([q_sign * error_max, 0, 0])
+                omega_corner = np.array([omega_sign * error_max, 0, 0])
+
+                states.append(np.concatenate([q_corner, omega_corner]))
+
     return states
 
 def synthesize():
-    print(f"Sampling {N_SAMPLES} states...")
+    print(f"Sampling {N_SAMPLES + 4} states...")
     states = sample_states(N_SAMPLES, ERROR_MAX, OMEGA_MAX)
     
     omega_scale = OMEGA_MAX 
@@ -54,6 +50,7 @@ def synthesize():
     constraints = [W >> 1e-6 * np.eye(6)]
     
     print("Solving LMI...")
+
     for x in states:
         A = jacobian(x, I, I_inv)
         A_s = S @ A @ S_inv
@@ -63,7 +60,7 @@ def synthesize():
         expr = 0.5 * (expr + expr.T) 
         constraints.append(expr << 0)
 
-    prob = cp.Problem(cp.Minimize(0), constraints)
+    prob = cp.Problem(cp.Minimize(cp.trace(W) + cp.norm(Y, 'fro')), constraints)
     prob.solve(solver = cp.CLARABEL)
     
     if prob.status != cp.OPTIMAL:
@@ -74,7 +71,9 @@ def synthesize():
     W_val = W.value
     Y_val = Y.value
     
-    M = np.linalg.inv(W_val)
+    M_scaled = np.linalg.inv(W_val)
+    M = S.T @ M_scaled @ S
+    
     K_scaled = Y_val @ np.linalg.inv(W_val)
     K = K_scaled @ S 
     
@@ -82,6 +81,9 @@ def synthesize():
     np.save('control/K.npy', K)
     np.save('control/M.npy', M)
     print("Solver success, saved K.npy and M.npy")
+
+    print(f"Max W/Y: {np.max(np.abs(W.value)):.4f}, {np.max(np.abs(Y.value)):.4f}")
+    print(f"Max absolute value in K: {np.max(np.abs(K)):.2f}")
 
 if __name__ == "__main__":
     synthesize()

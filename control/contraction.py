@@ -1,9 +1,14 @@
 import numpy as np
 
-try:
-    K = np.load('control/K.npy')
-except FileNotFoundError:
-    K = None
+K = None
+
+def load_gain():
+    global K
+
+    try:
+        K = np.load('control/K.npy')
+    except FileNotFoundError:
+        K = None
 
 def contraction_control(q_e_vec, omega, tau_max):
 

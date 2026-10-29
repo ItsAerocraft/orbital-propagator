@@ -52,3 +52,30 @@ def inertia_cuboid(mass, length, width, height):
                     [0, I_yy, 0],
                     [0, 0, I_zz]
                     ])
+
+
+def inertia(config):
+    '''
+    Computes the diagonal moment of inertia matrix for the configured object shape.
+
+    Args:
+        [config]: Simulation config, providing [object] (shape flag), [m]
+            (mass, kg), and the relevant dimensions: [radius_cylinder] (m),
+            [height_cylinder] (m) for a cylinder, or [length_cuboid] (m),
+            [width_cuboid] (m), [height_cuboid] (m) for a cuboid.
+
+    Returns:
+        3x3 array representing the moment of inertia matrix (kg m^2).
+
+    Raises:
+        ValueError: If [config.object] is not a supported shape.
+    '''
+
+    if config.object == "cylinder":
+        return inertia_cylinder(config.m, config.radius_cylinder, config.height_cylinder)
+
+    elif config.object == "cuboid":
+        return inertia_cuboid(config.m, config.length_cuboid, config.width_cuboid, config.height_cuboid)
+
+    else:
+        raise ValueError(f"Unknown object shape: {config.object!r} (expected 'cylinder' or 'cuboid').")
