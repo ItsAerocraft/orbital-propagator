@@ -68,3 +68,17 @@ def quaternion_multiply(q_a, q_b):
     vector = (q_a0 * q_b_vector) + (q_b0 * q_a_vector) + np.cross(q_a_vector, q_b_vector)
 
     return np.concatenate([scalar, vector])
+
+def quaternion_inverse(q):
+    q_inv = np.array([q[0], -q[1], -q[2], -q[3]])
+    return q_inv
+
+def quaternion_error_vec(q_current, q_target):
+    q_target_inv = quaternion_inverse(q_target)
+    q_error = quaternion_multiply(q_target_inv, q_current)
+
+    # fix unnecessary rotation elimination for same angles both sides of axis
+    if q_error[0] < 0:
+        q_error = - q_error
+
+    return q_error[1 : 4]

@@ -1,15 +1,17 @@
 import numpy as np
 
+from z_main.config import CONTROLLER_TYPE, KP, KD, KI, TAU_MAX, Q_TARGET
+
 from forces.force_gravity import gravity_accel
 from forces.force_drag import drag_accel
 from forces.force_perturbation import perturbation_accel
 
 from torques.torque_gravitygradient import gravgrad_torque
 from torques.torque_aerodynamic import aerod_torque
+from torques.torque_controller import get_control_torque
 
 from tumble.quaternion import quaternion_derivative
 from tumble.rotation import angular_acceleration
-
 
 def dynamics(t, state, config):
     '''
@@ -41,7 +43,11 @@ def dynamics(t, state, config):
 
     q_dot = quaternion_derivative(q, omega)
 
-    torque = gravgrad_torque(t, state, config) + aerod_torque(t, state, config)
+    tau_d = gravgrad_torque(t, state, config) + aerod_torque(t, state, config)
+    tau_c = get_control_torque(q, omega)
+
+    torque = tau_d + tau_c
+
     om_dot = angular_acceleration(omega, torque, config)
 
     return np.concatenate([vel_vctr, sum_accel, q_dot, om_dot])

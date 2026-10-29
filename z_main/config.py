@@ -77,3 +77,26 @@ class Config:
     # SELECTION
     object: str = "cuboid"  # (cylinder / cuboid) [chosen shape of satellite]
     runs: int = 15  # (integer) [number of runs for Monte-Carlo simulation, if chosen]
+
+
+# CONTROL
+# Module-level (not Config fields): torque_controller.py builds a PIDController
+# at import time, before any Config instance exists, so these must be importable
+# as bare names.
+KP = 2.0 # (unitless) [PD/PID gain]
+KD = 3.0 # (unitless) [PD/PID gain]
+
+KI = 0.1 # (unitless) [PID gain]
+
+TAU_MAX = 1.0 # (N m) [actuator maximum torque limit]
+
+Q_TARGET = np.array([1, 0, 0, 0]) # (unitless) [target orientation quaternion]
+
+CONTROLLER_TYPE = "pd" # (pd / pid / contraction) [chosen controller type for simulation]
+
+# CONTRACTION
+LAMBDA = 0.5 # (unitless) [contraction rate]
+N_SAMPLES = 100 # (unitless) [number of states sampled for LMI]
+
+OMEGA_MAX = 0.2 # (rad s^-1) [maximum spin in region]
+ERROR_MAX = 0.3 # (rad) [maximum attitude error]

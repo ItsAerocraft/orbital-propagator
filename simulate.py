@@ -1,5 +1,7 @@
 import time
 
+import os
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -8,11 +10,15 @@ from conversion.convert_elements import coe_to_cartesian, current_orbital_period
 
 from tumble.area import projected_area_cylinder, projected_area_cuboid
 
-from z_main.config import Config
+from z_main.config import Config, CONTROLLER_TYPE
 from z_main.integrators import propagate_adaptive
 from z_main.dynamics import dynamics
 
 from environment.stochastic import generate_f107_trajectory
+
+from torques.torque_controller import reset_controller
+
+from control.synthesize import synthesize
 
 
 def minorgridlines():
@@ -187,6 +193,12 @@ def execute():
     start_time = time.perf_counter()
     config = Config()
 
+    if CONTROLLER_TYPE == "contraction" and not os.path.exists('control/K.npy'):
+        print("K.npy not found. Running synthesize.py...")
+        synthesize()
+    
+    reset_controller()
+
     inertial_values_0 = coe_to_cartesian(config.a_0, config.e, config.theta_0,
                                          config.omega_0, config.inc_0, config.raan_0,
                                          config
@@ -197,10 +209,18 @@ def execute():
     state_0 = np.concatenate([inertial_values_0, quaternion_values_0, omega_values_0])
 
     print("")
-    graph_type = input("Enter graph type: ")
+    graph_type = input("Enter graph type or command: ")
 
     if graph_type in ["altitude", "orbit", "omega", "silhouette", "stochastic"]:
         print("Running simulation, graph type = "+ graph_type + "\n")
+
+    elif graph_type == "synthesize":
+        if not os.path.exists('control/K.npy'):
+            print("K.npy not found. Running synthesize.py...")
+            synthesize()
+        else:
+            print("K.npy found, nothing to change.")
+
     else:
         raise ValueError("Invalid graph type.")
 
