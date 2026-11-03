@@ -3,7 +3,7 @@ import dataclasses
 
 import numpy as np
 
-from z_main.config import TAU_MAX, Q_TARGET, COMPARE_DURATION, SETTLE_BAND
+from z_main.config import TAU_MAX, Q_TARGET, COMPARE_DURATION, SETTLE_FRACTION, SYNTH_SEED
 from z_main.integrators import propagate_adaptive
 from z_main.dynamics import dynamics
 
@@ -85,8 +85,8 @@ def run_controller(name, config, state_0, K):
 
     clipped = np.any(np.abs(raw_torque) > TAU_MAX, axis = 1)
 
-    # settled after the last sample with error above the band
-    outside = np.where(error_deg > SETTLE_BAND)[0]
+    # settled after the last sample with error above SETTLE_FRACTION of the initial error
+    outside = np.where(error_deg > SETTLE_FRACTION * error_deg[0])[0]
 
     if len(outside) == 0:
         settling_time = 0.0
@@ -190,6 +190,7 @@ def compare_controllers(config, state_0):
     if not gain_is_current():
         print("Saved gain missing or stale. Running synthesize.py...")
         x0_err = np.concatenate([quaternion_error_vec(state_0[6:10], Q_TARGET), state_0[10:13]])
+        np.random.seed(SYNTH_SEED)
         synthesize(x0_err)
 
     load_gain()
@@ -204,7 +205,7 @@ def compare_controllers(config, state_0):
         print(f"Running {name} controller for {COMPARE_DURATION} s...")
         results[name] = run_controller(name, config, state_0, K)
 
-    print(f"\nController comparison ({COMPARE_DURATION} s, settled below {SETTLE_BAND} deg)\n")
+    print(f"\nController comparison ({COMPARE_DURATION} s, settled within {SETTLE_FRACTION:.0%} of initial error)\n")
     print_table(results)
 
     run = results["contraction"]

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from plotting.style import minorgridlines
+from plotting.save import save_pix
 
 from z_main.config import TAU_MAX
 
@@ -31,6 +32,7 @@ def plot_error(results, t_max = None):
     plt.title("Attitude Error against Time", fontsize = 14)
 
     plt.legend()
+    save_pix("control_error")
     plt.show()
 
 
@@ -65,6 +67,7 @@ def plot_torque(results, tau_max, t_max = None):
     plt.title("Control Torque against Time", fontsize = 14)
 
     plt.legend()
+    save_pix("control_torque")
     plt.show()
 
 
@@ -101,6 +104,7 @@ def plot_audit(t_array, margins, clipped):
     plt.title("Contraction Audit Margin against Time", fontsize = 14)
 
     plt.legend()
+    save_pix("control_audit")
     plt.show()
 
 
@@ -128,7 +132,7 @@ def plot_comparison(results, margins):
     plot_audit(results["contraction"]["t"], margins, results["contraction"]["clipped"])
 
 
-def plot_tradeoff(sweep, metric, ylabel, title, did_not_settle = None):
+def plot_tradeoff(sweep, metric, ylabel, title, filename, did_not_settle = None):
     '''
     Plots one metric against control effort for every swept gain, one curve
     per controller, on log axes.
@@ -137,6 +141,7 @@ def plot_tradeoff(sweep, metric, ylabel, title, did_not_settle = None):
         [sweep]: Result of [control.sweep.run_sweep].
         [metric]: Key of the metric to plot on the y axis.
         [ylabel], [title]: Axis label and title.
+        [filename]: File name (without extension) to save the figure as.
         [did_not_settle]: y value at which to draw runs whose metric is None
             (hollow markers); None leaves them out.
     '''
@@ -168,6 +173,7 @@ def plot_tradeoff(sweep, metric, ylabel, title, did_not_settle = None):
     plt.title(title + r" (labels: $\omega_n$ for pd, $\lambda$ for contraction)", fontsize = 14)
 
     plt.legend()
+    save_pix(filename)
     plt.show()
 
 
@@ -180,5 +186,5 @@ def plot_sweep(sweep, duration):
         [sweep]: Result of [control.sweep.run_sweep].
         [duration]: Simulated window (s); runs that did not settle are drawn there.
     '''
-    plot_tradeoff(sweep, "steady_state_error", "Steady-State Offset / deg", "Offset against Effort")
-    plot_tradeoff(sweep, "settling_time", "Settling Time / s", "Settling Time against Effort", did_not_settle = duration)
+    plot_tradeoff(sweep, "steady_state_error", "Steady-State Offset / deg", "Offset against Effort", "sweep_offset")
+    plot_tradeoff(sweep, "settling_time", "Settling Time / s", "Settling Time against Effort", "sweep_settling", did_not_settle = duration)

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from plotting.style import minorgridlines
+from plotting.save import save_pix
 
 from tumble.area import projected_area_cylinder, projected_area_cuboid
 
@@ -34,6 +35,7 @@ def plot_3D(x_array, y_array, z_array):
     ax.set_ylabel("y / m")
     ax.set_zlabel("z / m")
 
+    save_pix("orbit")
     plt.show()
 
 
@@ -58,6 +60,7 @@ def plot_altitude(t_array, state_array, config):
     plt.ylabel("Altitude / km", fontsize = 12)
     plt.title("Altitude against Time", fontsize = 14)
 
+    save_pix("altitude_singlerun")
     plt.show()
 
 
@@ -85,6 +88,7 @@ def plot_silhouette(t_array, state_array, config):
     plt.ylabel("Silhouette Area / m$^2$", fontsize = 12)
     plt.title("Silhouette Area against Time")
 
+    save_pix("silhouette_area")
     plt.show()
 
 

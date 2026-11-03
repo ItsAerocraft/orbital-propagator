@@ -2,7 +2,7 @@ import dataclasses
 
 import numpy as np
 
-from z_main.config import Q_TARGET
+from z_main.config import Q_TARGET, SYNTH_SEED
 
 from tumble.inertia import inertia
 from tumble.quaternion import quaternion_error_vec
@@ -16,8 +16,6 @@ PD_OMEGA_N = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5] # (rad s^-1) [PD natural 
 PD_ZETA = 1.0 # (unitless) [PD damping ratio for the sweep]
 
 CONTRACTION_LAMBDAS = [0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6] # (s^-1) [contraction rates swept, each re-synthesised]
-
-SYNTH_SEED = 0 # (integer) [seed for the LMI state samples, so every rate sees the same samples]
 
 
 def pd_gains_for(omega_n, zeta, I_axis):

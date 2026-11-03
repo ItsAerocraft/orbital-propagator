@@ -8,7 +8,7 @@ from z_main.config import Config, TAU_MAX, ERROR_MAX, OMEGA_MAX
 from tumble.inertia import inertia
 
 load_gain()
-I = inertia(Config)
+I = inertia(Config())
 K = np.load('control/K.npy')
 M = np.load('control/M.npy')
 

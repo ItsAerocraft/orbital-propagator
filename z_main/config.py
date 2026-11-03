@@ -92,7 +92,7 @@ TAU_MAX = 0.001 # (N m) [actuator maximum torque limit]
 Q_TARGET = np.array([1, 0, 0, 0]) # (unitless) [target orientation quaternion]
 
 COMPARE_DURATION = 600 # (s) [simulated time for the controller comparison]
-SETTLE_BAND = 0.1 # (deg) [considered as settled once attitude error stays below value]
+SETTLE_FRACTION = 0.02 # (unitless) [considered as settled once attitude error stays below this fraction of the initial error]
 
 # CONTRACTION
 # feasibility needs roughly I * LAMBDA * OMEGA_MAX <= TAU_MAX (0.0038 * 0.2 * 0.1 ~ 8e-5 N m)
@@ -101,3 +101,5 @@ N_SAMPLES = 100 # (unitless) [number of states sampled for LMI]
 
 OMEGA_MAX = 0.1 # (rad s^-1) [maximum spin in region]
 ERROR_MAX = 0.3 # (unitless) [maximum quaternion error vector norm, sin(theta / 2); 0.3 ~ 35 deg, covers the initial 30 deg]
+
+SYNTH_SEED = 0 # (integer) [seed for the LMI state samples, so re-synthesis is reproducible]

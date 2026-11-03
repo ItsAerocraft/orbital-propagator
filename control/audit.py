@@ -7,7 +7,7 @@ from tumble.quaternion import quaternion_error_vec
 
 from z_main.config import Config, Q_TARGET, LAMBDA
 
-I = inertia(Config)
+I = inertia(Config())
 I_inv = np.linalg.inv(I)
 B = np.block([[np.zeros((3, 3))], [I_inv]])
 
