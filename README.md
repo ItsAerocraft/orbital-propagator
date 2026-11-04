@@ -1,10 +1,12 @@
 # Orbital Propagator
 
-A full technical writeup, covering the state vector, integration method, perturbation and drag models, attitude dynamics derivations, and control theory comparisons is available ([here](https://drive.google.com/file/d/1eVhonOmglabFQFT5dziGbBMAgRy_dJVF/view?usp=sharing)).
-
 A 6 degree-of-freedom orbital decay simulator, coupling orbital and attitude dynamics for a tumbling satellite under atmospheric drag, J2/J3/J4 gravitational perturbations, and stochastic solar flux (F10.7) Monte-Carlo variation.
 
 This project began as a rudimentary Excel spreadsheet model and has been extended into a coupled Python simulation. Since drag depends on the satellite's instantaneous cross-sectional area, and that area changes continuously as the satellite tumbles, orbital decay and attitude dynamics cannot be modeled independently.
+
+## Theory
+
+A full technical writeup, covering the state vector, integration method, perturbation and drag models, attitude dynamics derivations, and control theory comparisons is available ([here](https://drive.google.com/file/d/1eVhonOmglabFQFT5dziGbBMAgRy_dJVF/view?usp=sharing)).
 
 ## Features
 
