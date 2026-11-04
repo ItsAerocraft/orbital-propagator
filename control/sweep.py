@@ -22,6 +22,14 @@ def pd_gains_for(omega_n, zeta, I_axis):
     '''
     Returns PD gains ([Kp], [Kd]) placing the small-angle poles at [omega_n]
     with damping [zeta]. Kp carries a factor 2 because q_e = sin(theta / 2).
+
+    Args:
+        [omega_n]: Target natural frequency (rad s^-1).
+        [zeta]: Target damping ratio (unitless).
+        [I_axis]: Moment of inertia about the relevant axis (kg m^2).
+
+    Returns:
+        Tuple of ([Kp], [Kd]): proportional gain (N m) and derivative gain (N m s).
     '''
     return 2 * I_axis * omega_n ** 2, 2 * zeta * omega_n * I_axis
 
@@ -29,6 +37,16 @@ def pd_gains_for(omega_n, zeta, I_axis):
 def summarise(run, **params):
     '''
     Keeps the scalar metrics of a [run_controller] result.
+
+    Args:
+        [run]: Result dict from [control.compare.run_controller].
+        [**params]: Extra key/value pairs to merge into the returned dict
+            (e.g. the swept gain value).
+
+    Returns:
+        Dict of [params] merged with the scalar metrics [settling_time],
+        [steady_state_error], [predicted_ss_error], [effort], [peak_torque],
+        and [clip_count].
     '''
     keys = ["settling_time", "steady_state_error", "predicted_ss_error", "effort", "peak_torque", "clip_count"]
 
@@ -39,6 +57,10 @@ def run_sweep(config, state_0):
     '''
     Runs PD over PD_OMEGA_N and contraction over CONTRACTION_LAMBDAS from the
     same initial state, re-synthesising the contraction gain at every rate.
+
+    Args:
+        [config]: Simulation config.
+        [state_0]: Initial 13-element state vector.
 
     Returns:
         Dict with [pd] and [contraction] lists of metric dicts, one per gain,
@@ -88,6 +110,9 @@ def run_sweep(config, state_0):
 def print_sweep(sweep):
     '''
     Prints one row per swept gain.
+
+    Args:
+        [sweep]: Result of [run_sweep].
     '''
     fmt_settle = lambda t: "did not settle" if t is None else f"{t:.2f}"
 

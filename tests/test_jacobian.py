@@ -2,6 +2,10 @@ import numpy as np
 from control.jacobian import return_test_derivatives, jacobian
 
 def test_jacobian_finite_difference():
+    '''
+    Checks the analytical Jacobian against a central finite-difference
+    approximation at random error states.
+    '''
     I = np.diag([2.0, 3.0, 4.0])
     I_inv = np.linalg.inv(I)
     

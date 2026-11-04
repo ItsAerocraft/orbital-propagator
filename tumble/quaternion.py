@@ -70,10 +70,37 @@ def quaternion_multiply(q_a, q_b):
     return np.concatenate([scalar, vector])
 
 def quaternion_inverse(q):
+    '''
+    Computes the inverse of a quaternion.
+
+    Args:
+        [q]: 4-element quaternion (unitless), ([q0], [q1], [q2], [q3]).
+
+    Returns:
+        4-element array representing the inverse of [q] (unitless).
+
+    For a unit quaternion, the inverse equals the conjugate.
+    '''
     q_inv = np.array([q[0], -q[1], -q[2], -q[3]])
     return q_inv
 
 def quaternion_error_vec(q_current, q_target):
+    '''
+    Computes the vector part of the error quaternion between the current and
+    target orientation.
+
+    Args:
+        [q_current]: 4-element current orientation quaternion (unitless).
+        [q_target]: 4-element target orientation quaternion (unitless).
+
+    Returns:
+        3-element array representing the vector part of the error quaternion
+        (unitless), sin(theta / 2) along the error rotation axis.
+
+    Flips the sign of the error quaternion when its scalar part is negative,
+    so the shortest rotation is always represented (q and -q represent the
+    same orientation).
+    '''
     q_target_inv = quaternion_inverse(q_target)
     q_error = quaternion_multiply(q_target_inv, q_current)
 

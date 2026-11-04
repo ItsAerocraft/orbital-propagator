@@ -3,6 +3,16 @@ import numpy as np
 #let x represent the q_vec and omega portions of the state vector
 
 def skew(v):
+    '''
+    Computes the 3x3 skew-symmetric (cross-product) matrix of a 3-element vector.
+
+    Args:
+        [v]: 3-element vector.
+
+    Returns:
+        3x3 array such that [skew](v) @ w equals np.cross(v, w) for any
+        3-element w.
+    '''
     return np.array([
         [0,    -v[2],  v[1]],
         [v[2],     0, -v[0]],
@@ -10,6 +20,20 @@ def skew(v):
     ])
 
 def return_test_derivatives(x, I, I_inv):
+    '''
+    Computes the state derivative at an uncontrolled, undisturbed state, used
+    as the reference function for the finite-difference Jacobian check.
+
+    Args:
+        [x]: 6-element error state, elements 0:3 the error quaternion vector
+            part (unitless) and 3:6 the body-frame angular velocity (rad s^-1).
+        [I]: Moment of inertia matrix (kg m^2).
+        [I_inv]: Inverse of [I].
+
+    Returns:
+        6-element array representing the state derivative, with zero control
+        and disturbance torque.
+    '''
     q_vec = x[0:3]
     omega = x[3:6]
     q0 = np.sqrt(1 - np.dot(q_vec, q_vec)) 
@@ -21,6 +45,19 @@ def return_test_derivatives(x, I, I_inv):
     return np.concatenate([q_dot, omega_dot])
 
 def jacobian(x, I, I_inv):
+    '''
+    Computes the Jacobian of the error-state dynamics at [x], linearised
+    about zero control and disturbance torque.
+
+    Args:
+        [x]: 6-element error state, elements 0:3 the error quaternion vector
+            part (unitless) and 3:6 the body-frame angular velocity (rad s^-1).
+        [I]: Moment of inertia matrix (kg m^2).
+        [I_inv]: Inverse of [I].
+
+    Returns:
+        6x6 array representing the Jacobian A = d(x_dot)/d(x).
+    '''
     q_vec = x[0:3]
     omega = x[3:6]
     q0 = np.sqrt(1 - np.dot(q_vec, q_vec))

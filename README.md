@@ -46,7 +46,6 @@ python simulate.py
 | `single` | One uncontrolled propagation (orbit, altitude, silhouette area, angular velocity) |
 | `stochastic` | Monte Carlo batch over random F10.7 trajectories |
 | `control` | PD vs contraction controller from the same starting attitude, with a metrics table and certificate audit |
-| `sweep` | Both controllers across a range of gains, to compare offset and settling against control effort |
 
 Run the tests with `python tests/test_suite.py` (it re-synthesises the contraction gain first).
 
@@ -82,7 +81,7 @@ The control layer is tested on a small test body (about 0.0038 kg m² inertia, 1
 
 - **PD**: `tau = -Kp q_e,vec - Kd w`, with gains set from a chosen natural frequency and damping ratio. Its steady-state offset is predicted as `2 |d| / Kp`, where `d` is the disturbance torque, and the simulated offset agrees to within about 2%.
 - **Contraction**: a constant-metric controller found by solving a linear matrix inequality (`cvxpy`) over sampled error states, with the torque limit built in. A numerical audit then checks the contraction condition at every unclipped sample along the run.
-- **Comparison**: both controllers see the same start, disturbance and torque limit, and are compared by steady-state offset, peak torque and control effort (`control` and `sweep` modes).
+- **Comparison**: both controllers see the same start, disturbance and torque limit, and are compared by steady-state offset, peak torque and control effort (`control` mode). A gain sweep across both controllers exists in `control/sweep.py` as a working extension, not yet wired into `simulate.py`.
 
 <!-- add control plots here once saved -->
 

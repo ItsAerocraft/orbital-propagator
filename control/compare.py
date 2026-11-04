@@ -28,6 +28,12 @@ def sample_times(T):
     '''
     Output times for the comparison: 0.01 s spacing over the first
     TRANSIENT_WINDOW seconds, then the usual 2000 samples over the rest.
+
+    Args:
+        [T]: Total simulated duration (s).
+
+    Returns:
+        Array of sample times (s), sorted and deduplicated.
     '''
     dense = np.linspace(0, TRANSIENT_WINDOW, TRANSIENT_SAMPLES)
     coarse = np.linspace(TRANSIENT_WINDOW, T, 2000)
@@ -38,6 +44,13 @@ def sample_times(T):
 def attitude_gain(cfg, K):
     '''
     Returns the 3x3 attitude block K_q of the control law tau = K_q q_e + K_w omega.
+
+    Args:
+        [cfg]: Simulation config, providing [controller] (pd / contraction).
+        [K]: Contraction gain (3 x 6), used when [cfg.controller] is "contraction".
+
+    Returns:
+        3x3 array representing the attitude gain block K_q.
     '''
     if cfg.controller == "pd":
         return -pd_gains(cfg)[0] * np.eye(3)
@@ -162,6 +175,10 @@ def print_table(results):
 def gain_is_current():
     '''
     Checks the saved gain was synthesised with the current config parameters.
+
+    Returns:
+        True if control/synth_params.npy exists and matches the current
+        [synth_params], False otherwise.
     '''
     paths = ['control/K.npy', 'control/M.npy', 'control/synth_params.npy', 'control/lambda.npy']
 

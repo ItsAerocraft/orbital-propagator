@@ -13,14 +13,18 @@ K = np.load('control/K.npy')
 M = np.load('control/M.npy')
 
 def test_zero_error_zero_torque():
-    """If error is 0 and spin is 0, torque must be 0."""
+    '''
+    If error is 0 and spin is 0, torque must be 0.
+    '''
     q_error_vec = np.zeros(3)
     omega = np.zeros(3)
     tau = contraction_control(q_error_vec, omega, TAU_MAX)
     assert np.allclose(tau, np.zeros(3)), f"Expected zero torque, got {tau}"
 
 def test_sign_opposes_error():
-    """If pushed off target, torque should oppose the error."""
+    '''
+    If pushed off target, torque should oppose the error.
+    '''
 
     # Push +X axis
     q_error_vec = np.array([0.1, 0.0, 0.0])
@@ -34,13 +38,17 @@ def test_sign_opposes_error():
     assert tau[1] > 0, f"Torque should oppose -Y error, got {tau[1]}"
 
 def test_M_symmetric_positive_definite():
-    """M must be symmetric and have all positive eigenvalues."""
+    '''
+    M must be symmetric and have all positive eigenvalues.
+    '''
     assert np.allclose(M, M.T), "M is not symmetric!"
     eigs = np.linalg.eigvalsh(M)
     assert np.all(eigs > 0), f"M is not positive definite! Eigenvalues: {eigs}"
 
 def test_closed_loop_stability_at_target():
-    """At the target, the closed-loop eigenvalues must be real parts < -lambda."""
+    '''
+    At the target, the closed-loop eigenvalues must have real parts < -lambda.
+    '''
     x_err = np.zeros(6)
     A = jacobian(x_err, I, np.linalg.inv(I))
     B = np.block([[np.zeros((3, 3))], [np.linalg.inv(I)]])
@@ -51,7 +59,9 @@ def test_closed_loop_stability_at_target():
     assert max_real_part < 0, f"Closed loop is not stable! Max real part: {max_real_part}"
 
 def test_gain_respects_torque_limit():
-    """Unclipped torque K x must stay within TAU_MAX across the synthesis region."""
+    '''
+    Unclipped torque K x must stay within TAU_MAX across the synthesis region.
+    '''
     rng = np.random.default_rng(0)
     worst = 0.0
     for _ in range(2000):

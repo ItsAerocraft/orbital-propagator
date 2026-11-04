@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from plotting.style import minorgridlines
 from plotting.save import save_pix
 
-from z_main.config import TAU_MAX
+from z_main.config import TAU_MAX, SETTLE_FRACTION
 
 
 def plot_error(results, t_max = None):
@@ -21,6 +21,13 @@ def plot_error(results, t_max = None):
 
     for name, run in results.items():
         plt.plot(run["t"], run["error_deg"], label = name)
+
+    band = SETTLE_FRACTION * next(iter(results.values()))["error_deg"][0]
+    plt.axhline(band, color = "green", linestyle = "--", label = f"{SETTLE_FRACTION:.0%} band")
+
+    for name, run in results.items():
+        if run["settling_time"] is not None:
+            plt.scatter([run["settling_time"]], [band], color = "green", zorder = 5)
 
     if t_max is not None:
         plt.xlim(0, t_max)

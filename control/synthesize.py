@@ -19,11 +19,29 @@ B = np.block([[np.zeros((3, 3))], [I_inv]])
 LAMBDA_FALLBACKS = [LAMBDA, LAMBDA / 2, LAMBDA / 4]
 
 def synth_params():
-    """Parameters the saved K and M depend on, used to detect a stale gain."""
+    '''
+    Parameters the saved K and M depend on, used to detect a stale gain.
+
+    Returns:
+        Array of ([LAMBDA], [N_SAMPLES], [OMEGA_MAX], [ERROR_MAX], [TAU_MAX]).
+    '''
     return np.array([LAMBDA, N_SAMPLES, OMEGA_MAX, ERROR_MAX, TAU_MAX])
 
 def sample_states(n, error_max, omega_max):
-    """Generate n random states in the region."""
+    '''
+    Generates [n] random states in the region, plus the four corner states
+    along the first axis.
+
+    Args:
+        [n]: Number of random states to sample.
+        [error_max]: Maximum error quaternion vector norm (unitless).
+        [omega_max]: Maximum body-frame angular velocity magnitude (rad s^-1).
+
+    Returns:
+        List of 6-element error state arrays, elements 0:3 the error
+        quaternion vector part (unitless) and 3:6 the body-frame angular
+        velocity (rad s^-1).
+    '''
     states = []
     for _ in range(n):
         q = np.random.randn(3)
@@ -44,13 +62,37 @@ def sample_states(n, error_max, omega_max):
     return states
 
 def contained_points(x0_err):
-    """Extra points the invariant ellipsoid must contain, beyond the sampled region."""
+    '''
+    Extra points the invariant ellipsoid must contain, beyond the sampled region.
+
+    Args:
+        [x0_err]: 6-element initial error state, or None if there is none to add.
+
+    Returns:
+        List containing [x0_err] as an array, or an empty list if [x0_err] is None.
+    '''
     if x0_err is None:
         return []
 
     return [np.asarray(x0_err)]
 
 def solve_lmi(states, points, lam, S, S_inv):
+    '''
+    Solves the contraction LMI for a single rate [lam], given the sampled
+    states and points the invariant ellipsoid must contain.
+
+    Args:
+        [states]: List of 6-element error states sampled over the region.
+        [points]: List of extra 6-element error states the ellipsoid must contain.
+        [lam]: Contraction rate (s^-1).
+        [S]: Diagonal scaling matrix (6 x 6) applied to the angular velocity
+            components, so the ellipsoid constraint is well-conditioned.
+        [S_inv]: Inverse of [S].
+
+    Returns:
+        Tuple of ([prob], [W], [Y]): the solved cvxpy Problem, and the
+        scaled ellipsoid shape variable W (6 x 6) and gain variable Y (3 x 6).
+    '''
     W = cp.Variable((6, 6), symmetric=True)
     Y = cp.Variable((3, 6))
     constraints = [W >> 1e-6 * np.eye(6)]
@@ -86,6 +128,12 @@ def synthesize(x0_err=None, lambdas=None, save=True):
     '''
     Solves the contraction LMI, trying each rate in [lambdas] (default
     LAMBDA_FALLBACKS) until one is feasible.
+
+    Args:
+        [x0_err]: Optional 6-element initial error state the invariant
+            ellipsoid must contain, in addition to the sampled region.
+        [lambdas]: Contraction rates to try, in order; None uses LAMBDA_FALLBACKS.
+        [save]: Whether to write the result to control/.
 
     Returns:
         Tuple of ([K], [M], [lam]), or None if every rate was infeasible.

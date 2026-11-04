@@ -18,7 +18,7 @@ from plotting.plot_stochastic import plot_stochastic
 from plotting.plot_control import plot_comparison, plot_sweep
 
 
-MODES = ["single", "stochastic", "control", "sweep"]
+MODES = ["single", "stochastic", "control"]
 
 
 def initial_state(config):

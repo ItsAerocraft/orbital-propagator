@@ -12,13 +12,32 @@ I_inv = np.linalg.inv(I)
 B = np.block([[np.zeros((3, 3))], [I_inv]])
 
 def sample_weights(t):
-    """Time each sample represents (s), so fractions are of time, not of samples."""
+    '''
+    Computes the time each sample represents, so fractions are of time, not of samples.
+
+    Args:
+        [t]: Array of sample times (s).
+
+    Returns:
+        Array of per-sample time weights (s), one per entry in [t].
+    '''
     edges = np.concatenate([[t[0]], 0.5 * (t[1:] + t[:-1]), [t[-1]]])
     return np.diff(edges)
 
 def audit_trajectory(x_log, M, K, t, clipped, lam = LAMBDA):
     '''
     Evaluates the contraction condition along a trajectory.
+
+    Args:
+        [x_log]: Array of state vectors, one per row, whose columns 6:10 are
+            the orientation quaternion (unitless) and 10:13 the body-frame
+            angular velocity (rad s^-1).
+        [M]: Contraction metric matrix (6 x 6).
+        [K]: Contraction gain (3 x 6).
+        [t]: Array of sample times (s).
+        [clipped]: Array of bools, True where the commanded torque exceeded
+            the actuator limit.
+        [lam]: Contraction rate (s^-1).
 
     The certificate assumes tau = K x, so clipped samples are not covered by it:
     their margins are still returned, but they are excluded from [fraction_held]
