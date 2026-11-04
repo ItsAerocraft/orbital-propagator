@@ -1,6 +1,6 @@
 # Orbital Propagator
 
-**[Read the full report](REPORT_LINK_HERE)**: the propagator and the PD vs contraction controller comparison.
+A full technical writeup, covering the state vector, integration method, perturbation and drag models, attitude dynamics derivations, and control theory comparisons is available ([here](https://drive.google.com/file/d/1eVhonOmglabFQFT5dziGbBMAgRy_dJVF/view?usp=sharing)).
 
 A 6 degree-of-freedom orbital decay simulator, coupling orbital and attitude dynamics for a tumbling satellite under atmospheric drag, J2/J3/J4 gravitational perturbations, and stochastic solar flux (F10.7) Monte-Carlo variation.
 
@@ -68,10 +68,6 @@ Model parameters (orbit, satellite geometry, integration settings) are set in `z
 **Single-run altitude decay (`single` mode):** periapsis and apoapsis oscillation shown as a filled band, with a sharp final descent as drag intensifies near reentry.
 
 ![Altitude against time, single run](_docs/images/altitude_singlerun.png)
-
-## Background & Theory
-
-A full technical writeup, covering the state vector, integration method, perturbation and drag models, and attitude dynamics derivations, is available ([here](https://drive.google.com/file/d/1eVhonOmglabFQFT5dziGbBMAgRy_dJVF/view?usp=sharing)).
 
 ## Attitude Control
 
